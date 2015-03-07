@@ -1,0 +1,19 @@
+<RCC>
+    <qresource prefix="/">
+        <file>Gamepad.png</file>
+        <file>WiFi_Gamepad-512.png</file>
+        <file>Chip.png</file>
+        <file>joy.png</file>
+        <file>Bussola.txt</file>
+        <file>ChipkitV1.txt</file>
+        <file>DCM.txt</file>
+        <file>Fusion.txt</file>
+        <file>Ir.txt</file>
+        <file>Math.txt</file>
+        <file>Output.txt</file>
+        <file>Sensors.txt</file>
+        <file>SetupMotors.txt</file>
+        <file>GLUT_Windows.zip</file>
+        <file>SDL_Windows.zip</file>
+    </qresource>
+</RCC>

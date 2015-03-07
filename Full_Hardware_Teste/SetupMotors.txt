@@ -1,0 +1,33 @@
+void setup_motores(void)
+{
+  byte firm_int=0, firm_dec=0, firm_dev=0;      // the firmware version of your Omni3MD board (visit http://www.botnroll.com/omni3md/ to check if your version is updated)
+
+  omni.i2c_connect(OMNI3MD_ADDRESS);
+  omni.stop_motors();
+
+  omni.read_firmware(&firm_int,&firm_dec,&firm_dev); // read firmware version value
+
+  omni.set_i2c_timeout(I2CTIMEOUT);
+  
+  delay(20);
+  omni.set_ramp(0,1000,0);   // set acceleration ramp and limiar take off parameter gain[word ramp_time, word Kl]   // 400 1150 500
+  delay(15);                 // 15ms pause required for Omni3MD eeprom writing
+  
+  omni.set_PID(0,0,0); // Adjust paramenters for PID control [word Kp, word Ki, word Kd] 700,400,200
+  delay(15);                 // 15ms pause required for Omni3MD eeprom writing
+  
+  omni.set_battery_min(BATTERYMIN);
+  delay(10);
+  
+  
+  omni.set_enc_value(1,0);
+  omni.set_enc_value(2,0);
+  omni.set_enc_value(3,0);
+
+  omni.set_prescaler(1, 1);  //sets the prescaler to 100; encoder count will increment by 1 each 100 pulses [byte encoder, byte value]
+  delay(10);
+  omni.set_prescaler(2, 1);
+  delay(10);    
+  omni.set_prescaler(3, 1);
+  delay(10);  
+}

@@ -1,0 +1,14 @@
+void read_sensors() {
+  Read_Gyro(); // Read gyroscope
+  Read_Accel(); // Read accelerometer
+  Read_Magn(); // Read magnetometer
+}
+
+// Output angles: yaw, pitch, roll
+void output_angles()
+{
+  char str[80];
+  sprintf(str, "?%.2f,%.2f,%.2f!", TO_DEG(yaw),TO_DEG(pitch),TO_DEG(roll));
+  Serial.write(str);
+    
+}

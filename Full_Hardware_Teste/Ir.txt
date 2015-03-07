@@ -1,0 +1,36 @@
+void readIR()
+{
+  irFrente = irDetect(IR_EMISSOR_FRENTE, IR_RECETOR_FRENTE, 38000); // Check for object
+  if(irFrente == 1) 
+  {
+    digitalWrite(MM1,HIGH);
+    analogWrite(CH, 255);   //PWM Speed Control
+  }
+  else 
+  {
+    analogWrite(CH, 0);   //PWM Speed Control
+  }
+  irTras = irDetect(IR_EMISSOR_TRAS, IR_RECETOR_TRAS, 38000); // Check for object
+}
+
+
+int irDetect(int irLedPin, int irReceiverPin, long frequency)
+{
+  tone(irLedPin, frequency, 8);              // IRLED 38 kHz for at least 1 ms
+  delay(1);                                  // Wait 1 ms
+  //int ir = digitalRead(irReceiverPin);       // IR receiver -> ir variable
+  int ir = analogRead(irReceiverPin);
+  
+  if( ir <= 10)
+  {
+    /*Normalmente e zero quando nao deteta nada*/
+    noTone(irLedPin);
+    return 0;
+  }
+  else
+  {
+    /*Normalmente e 900... */
+    noTone(irLedPin);
+    return 1;
+  }
+}

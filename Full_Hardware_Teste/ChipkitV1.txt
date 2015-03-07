@@ -1,0 +1,398 @@
+/*
+This code was created by Hélder Ribeiro (a58795@alunos.uminho.pt)
+on 04 December 2014
+*/
+#include <Wire.h>
+#include "Timer.h"
+#include <Omni3MD.h>
+
+#define OUTPUT__BAUD_RATE 57600
+#define BATTERYMIN 18
+#define I2CTIMEOUT 100
+
+#define IRREADINTERVAL 50
+#define IMUREADINTERVAL 20
+#define IMUOUTPUTINTERVAL 100
+
+#define NOIMU true
+
+//constants definitions
+#define OMNI3MD_ADDRESS 0x30        // default factory address
+#define M1  1            //Motor1
+#define M2  2            //Motor2
+#define M3  3            //Motor3
+
+#define CH 5  
+#define MM1 4 
+#define SOL 6                      
+#define MM2 7 
+#define KICKPIN 8
+
+#define IR_EMISSOR_FRENTE   2
+#define IR_EMISSOR_TRAS     3
+#define IR_RECETOR_FRENTE   A0
+#define IR_RECETOR_TRAS     A1
+
+//Variables to read from Omni3MD
+float battery=0;       // battery reading
+float temperature=0;   // temperature reading
+byte firm_int=0;      // the firmware version of your Omni3MD board 
+byte firm_dec=0;      // the firmware version of your Omni3MD board 
+byte firm_dev=0;      // the firmware version of your Omni3MD board
+byte ctrl_rate;        // the control rate for your motors defined at calibration (in times per second)
+int enc1_max;          // maximum count for encoder 1 at calibration, for the defined control rate
+int enc2_max;          // maximum count for encoder 2 at calibration, for the defined control rate
+int enc3_max;          // maximum count for encoder 3 at calibration, for the defined control rate
+
+String lido = "";
+String lido2 = "";
+String lido3 = "";
+
+int S = 0,D = 0;
+
+Timer tIR,tKick;                               //instantiate the timer object
+int tEventIR,tEventKick;
+int kickTime = 0;
+int irFrente = 0,irTras = 0;
+
+Omni3MD omni;          //declaration of object variable to control the Omni3MD
+
+
+/**********************************IMUVARS*********************************************************************/
+
+#define HW__VERSION_CODE 10724 // SparkFun "9DOF Sensor Stick" version "SEN-10724" (HMC5883L magnetometer)
+// SENSOR CALIBRATION
+/*****************************************************************/
+#define ACCEL_X_MIN ((float) -250)
+#define ACCEL_X_MAX ((float) 250)
+#define ACCEL_Y_MIN ((float) -250)
+#define ACCEL_Y_MAX ((float) 250)
+#define ACCEL_Z_MIN ((float) -250)
+#define ACCEL_Z_MAX ((float) 250)
+
+// Magnetometer (standard calibration mode)
+// "magn x,y,z (min/max) = X_MIN/X_MAX  Y_MIN/Y_MAX  Z_MIN/Z_MAX"
+#define MAGN_X_MIN ((float) -600)
+#define MAGN_X_MAX ((float) 600)
+#define MAGN_Y_MIN ((float) -600)
+#define MAGN_Y_MAX ((float) 600)
+#define MAGN_Z_MIN ((float) -600)
+#define MAGN_Z_MAX ((float) 600)
+
+// Gyroscope
+// "gyro x,y,z (current/average) = .../OFFSET_X  .../OFFSET_Y  .../OFFSET_Z
+#define GYRO_AVERAGE_OFFSET_X ((float) 0.0)
+#define GYRO_AVERAGE_OFFSET_Y ((float) 0.0)
+#define GYRO_AVERAGE_OFFSET_Z ((float) 0.0)
+
+// DEBUG OPTIONS
+/*****************************************************************/
+// When set to true, gyro drift correction will not be applied
+#define DEBUG__NO_DRIFT_CORRECTION false
+// Print elapsed time after each I/O loop
+#define DEBUG__PRINT_LOOP_TIME false
+
+// Sensor calibration scale and offset values
+#define ACCEL_X_OFFSET ((ACCEL_X_MIN + ACCEL_X_MAX) / 2.0f)
+#define ACCEL_Y_OFFSET ((ACCEL_Y_MIN + ACCEL_Y_MAX) / 2.0f)
+#define ACCEL_Z_OFFSET ((ACCEL_Z_MIN + ACCEL_Z_MAX) / 2.0f)
+#define ACCEL_X_SCALE (GRAVITY / (ACCEL_X_MAX - ACCEL_X_OFFSET))
+#define ACCEL_Y_SCALE (GRAVITY / (ACCEL_Y_MAX - ACCEL_Y_OFFSET))
+#define ACCEL_Z_SCALE (GRAVITY / (ACCEL_Z_MAX - ACCEL_Z_OFFSET))
+
+#define MAGN_X_OFFSET ((MAGN_X_MIN + MAGN_X_MAX) / 2.0f)
+#define MAGN_Y_OFFSET ((MAGN_Y_MIN + MAGN_Y_MAX) / 2.0f)
+#define MAGN_Z_OFFSET ((MAGN_Z_MIN + MAGN_Z_MAX) / 2.0f)
+#define MAGN_X_SCALE (100.0f / (MAGN_X_MAX - MAGN_X_OFFSET))
+#define MAGN_Y_SCALE (100.0f / (MAGN_Y_MAX - MAGN_Y_OFFSET))
+#define MAGN_Z_SCALE (100.0f / (MAGN_Z_MAX - MAGN_Z_OFFSET))
+
+// Gain for gyroscope (ITG-3200)
+#define GYRO_GAIN 0.06957 // Same gain on all axes
+#define GYRO_SCALED_RAD(x) (x * TO_RAD(GYRO_GAIN)) // Calculate the scaled gyro readings in radians per second
+
+// DCM parameters
+#define Kp_ROLLPITCH 0.02f
+#define Ki_ROLLPITCH 0.00002f
+#define Kp_YAW 1.2f
+#define Ki_YAW 0.00002f
+
+// Stuff
+#define STATUS_LED_PIN 13  // Pin number of status LED
+#define GRAVITY 256.0f // "1G reference" used for DCM filter and accelerometer calibration
+#define TO_RAD(x) (x * 0.01745329252)  // *pi/180
+#define TO_DEG(x) (x * 57.2957795131)  // *180/pi
+
+// Sensor variables
+float accel[3];  // Actually stores the NEGATED acceleration (equals gravity, if board not moving).
+float accel_min[3];
+float accel_max[3];
+
+float magnetom[3];
+float magnetom_min[3];
+float magnetom_max[3];
+float magnetom_tmp[3];
+
+float gyro[3];
+float gyro_average[3];
+int gyro_num_samples = 0;
+
+// DCM variables
+float MAG_Heading;
+float Accel_Vector[3]= {0, 0, 0}; // Store the acceleration in a vector
+float Gyro_Vector[3]= {0, 0, 0}; // Store the gyros turn rate in a vector
+float Omega_Vector[3]= {0, 0, 0}; // Corrected Gyro_Vector data
+float Omega_P[3]= {0, 0, 0}; // Omega Proportional correction
+float Omega_I[3]= {0, 0, 0}; // Omega Integrator
+float Omega[3]= {0, 0, 0};
+float errorRollPitch[3] = {0, 0, 0};
+float errorYaw[3] = {0, 0, 0};
+float DCM_Matrix[3][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+float Update_Matrix[3][3] = {{0, 1, 2}, {3, 4, 5}, {6, 7, 8}};
+float Temporary_Matrix[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+
+// Euler angles
+float yaw;
+float pitch;
+float roll;
+
+// DCM timing
+float G_Dt; // Integration time for DCM algorithm
+
+// More output-state variables
+boolean output_stream_on;
+boolean output_single_on;
+int curr_calibration_sensor = 0;
+boolean reset_calibration_session_flag = true;
+int num_accel_errors = 0;
+int num_magn_errors = 0;
+int num_gyro_errors = 0;
+
+
+Timer tOutput,tImuRead;
+int tEventOutput,tEventImuRead;
+/**************************************************************************************************************/
+int maxKick = 25;
+
+void setup()
+{
+  // Init serial output
+  Serial.begin(OUTPUT__BAUD_RATE);
+  
+    pinMode(MM1, OUTPUT);   
+    pinMode(MM2, OUTPUT); 
+    digitalWrite(MM1,HIGH);   
+    digitalWrite(MM2, HIGH);       
+    analogWrite(SOL, 0);   //PWM Speed Control
+    analogWrite(CH, 0);   //PWM Speed Control
+    
+    pinMode(KICKPIN, OUTPUT);
+    digitalWrite(KICKPIN, LOW);
+    
+    pinMode(IR_RECETOR_FRENTE, INPUT);
+    pinMode(IR_RECETOR_TRAS, INPUT);   
+    pinMode(IR_EMISSOR_FRENTE, OUTPUT);   // Left IR LED & Receiver
+    pinMode(IR_EMISSOR_TRAS, OUTPUT);   // Left IR LED & Receiver
+  
+  Wire.begin();
+/*
+  // Init sensors
+  delay(50);  // Give sensors enough time to start
+  I2C_Init();*/
+  Accel_Init();
+  Magn_Init();
+  Gyro_Init();
+  
+  // Read sensors, init DCM algorithm
+  delay(20);  // Give sensors enough time to collect data
+  reset_sensor_fusion();
+  
+  delay(20);
+  setup_motores();                    // Prepare Motors
+  delay(10);                         // pause 10 milliseconds
+    
+    omni.read_firmware(&firm_int,&firm_dec,&firm_dev); // read firmware version value
+    Serial.print("Firmware:");  
+    Serial.print(firm_int);             // prints firmware value
+    Serial.print(".");  
+    Serial.print(firm_dec);             // prints firmware value
+    Serial.print(".");  
+    Serial.println(firm_dev);             // prints firmware value
+    ctrl_rate=omni.read_control_rate();   // read the control rate value
+    Serial.print("Control_Rate:");
+    Serial.println(ctrl_rate);            // prints control rate value
+    enc1_max=omni.read_enc1_max();        // read encoder1 maximum value at calibration (usefull for detecting a faulty encoder)
+    Serial.print("Encoder1_max:");
+    Serial.println(enc1_max);              // prints encoder1 maximum calibration value
+    enc2_max=omni.read_enc2_max();        // read encoder1 maximum value at calibration (usefull for detecting a faulty encoder)
+    Serial.print("Encoder2_max:");
+    Serial.println(enc2_max);              // prints encoder2 maximum calibration value 
+    enc3_max=omni.read_enc3_max();        // read encoder1 maximum value at calibration (usefull for detecting a faulty encoder)
+    Serial.print("Encoder3_max:");
+    Serial.println(enc3_max);              // prints encoder3 maximum calibration value
+    battery=omni.read_battery();          // read battery value
+    Serial.print("Battery:");
+    Serial.println(battery);              // prints battery value
+    temperature=omni.read_temperature();  // read temperature value
+    Serial.print("Temperature:");
+    Serial.println(temperature);          // prints temperature value
+    delay(1000);   
+  
+  
+  /*tEventOutput = tOutput.every(IMUOUTPUTINTERVAL, functOutput); 
+  tEventImuRead = tImuRead.every(IMUREADINTERVAL, functReadImu);*/
+  tEventIR = tIR.every(IRREADINTERVAL, readIR); //take reading every IRREADINTERVAL miliseconds
+  
+  
+  delay(1000);
+
+}
+
+// Main loop
+void loop()
+{
+  tOutput.update();
+  tImuRead.update();
+  tIR.update();
+  tKick.update();
+  
+  while(Serial.available()>0)
+  {
+    char read_char = Serial.read();
+    if(read_char!='\n')
+    {
+      lido += read_char;
+    }
+    else
+    {
+      if(lido[0]=='A')
+      {
+        lido2 = lido.substring(2, lido.indexOf('!'));
+        lido3 = lido.substring(lido.indexOf('!')+1, lido.length());
+        int val = lido2.toInt();
+        int val2 = lido3.toInt();
+        omni.mov_lin1m_nopid(M3,val);
+        delay(1);
+        omni.mov_lin1m_nopid(M1,-val);
+        delay(1);
+        omni.mov_lin1m_nopid(M2,-val2);
+        delay(1);
+        /*Serial.print("Motor1: ");Serial.println(val); Serial.print("Motor2: "); Serial.println(val2); Serial.print("Motor3: "); Serial.println(-val);*/
+        
+      }
+      else if(lido[0]=='S')
+      {
+        if(S == 0)
+        {
+          digitalWrite(MM1,HIGH);      
+          analogWrite(SOL, 255);   //PWM Speed Control
+          S = 1;
+          Serial.print("Solonoide1");
+        }
+        else
+        {
+          digitalWrite(MM1,HIGH);      
+          analogWrite(SOL, 0);   //PWM Speed Control
+          S = 0;
+          Serial.print("Solonoide0");
+        }
+      }
+      else if(lido[0]=='D')
+      {
+        if(D == 0)
+        {
+          digitalWrite(MM2,HIGH);      
+          analogWrite(CH, 255);   //PWM Speed Control
+          D = 1;
+          Serial.print("Dribler1");
+        }
+        else
+        {
+          digitalWrite(MM2,HIGH);      
+          analogWrite(CH, 0);   //PWM Speed Control
+          D = 0;
+          Serial.print("Dribler0");
+        }
+      }
+      if(lido[0]=='K')
+      {
+        if(lido[1]=='V')
+        {
+          lido2 = lido.substring(2, lido.length());
+          kickTime = lido2.toInt();
+          if(kickTime>maxKick)
+            {
+              kickTime = maxKick;
+            }
+            if(kickTime < 0)
+            {
+              kickTime = 0;
+            }
+            digitalWrite(KICKPIN, HIGH);
+            tEventKick = tKick.every(kickTime, kick_ball); //take time every kickTime miliseconds
+            Serial.print(kickTime);
+        }
+        else if(lido[1]=='H')
+        {
+          lido2 = lido.substring(2, lido.length());
+          kickTime = lido2.toInt();
+          
+          digitalWrite(MM1,HIGH);      
+          analogWrite(SOL, 255);   //PWM Speed Control
+          S = 1;
+          Serial.print("Solonoide1:");
+          
+          if(kickTime>maxKick)
+            {
+              kickTime = maxKick;
+            }
+            if(kickTime < 0)
+            {
+              kickTime = 0;
+            }
+            digitalWrite(KICKPIN, HIGH);
+            tEventKick = tKick.every(kickTime, kick_ball); //take time every kickTime miliseconds
+            Serial.print(kickTime);
+        }
+      }
+      lido = "";
+    }
+  }
+}
+
+void functOutput()
+{
+  if(!NOIMU)
+  {
+    output_angles();
+  }
+  else
+  {
+    
+  }
+  
+}
+
+void functReadImu()
+{
+    G_Dt = (float) 20 / 1000.0f;
+  
+    // Update sensor readings
+    read_sensors();
+
+    // Apply sensor calibration
+    compensate_sensor_errors();
+    
+    // Run DCM algorithm
+    Compass_Heading(); // Calculate magnetic heading
+    Matrix_update();
+    Normalize();
+    Drift_correction();
+    Euler_angles();
+}
+
+void kick_ball()
+{
+  digitalWrite(KICKPIN, LOW);
+  tKick.stop(tEventKick);
+}
