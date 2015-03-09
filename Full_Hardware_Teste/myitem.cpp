@@ -13,6 +13,8 @@ QRectF MyItem::boundingRect() const
 
 void MyItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
+    Q_UNUSED(option);
+    Q_UNUSED(widget);
     //QRectF rec = boundingRect();
 
     QPainterPath paht;
@@ -57,7 +59,7 @@ void MyItem::setNotclicked()
 
 void MyItem::advance(int phase)
 {
-
+    Q_UNUSED(phase);
 }
 
 void MyItem::mousePressEvent(QGraphicsSceneMouseEvent *event)

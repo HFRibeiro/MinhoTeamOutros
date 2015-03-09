@@ -13,6 +13,8 @@ QRectF BackButton::boundingRect() const
 
 void BackButton::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
+    Q_UNUSED(option);
+    Q_UNUSED(widget);
     QRectF rec = boundingRect();
     /*QPainterPath paht;
     paht.addEllipse(boundingRect());*/
@@ -72,7 +74,7 @@ void BackButton::setNotclicked()
 
 void BackButton::advance(int phase)
 {
-
+    Q_UNUSED(phase);
 }
 
 void BackButton::mousePressEvent(QGraphicsSceneMouseEvent *event)

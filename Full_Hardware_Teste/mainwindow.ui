@@ -14,7 +14,7 @@
    <string>HardwareFullTest</string>
   </property>
   <property name="windowIcon">
-   <iconset>
+   <iconset resource="rs.qrc">
     <normaloff>:/Chip.png</normaloff>:/Chip.png</iconset>
   </property>
   <property name="styleSheet">
@@ -40,7 +40,7 @@
        <string notr="true"/>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="title">
@@ -584,7 +584,7 @@ border-width: 1px black solid;</string>
       </widget>
       <widget class="QWidget" name="tab_5">
        <attribute name="title">
-        <string>Chipkit Code</string>
+        <string>Arduino Code</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout_5">
         <item row="1" column="0">
@@ -601,53 +601,11 @@ border-width: 1px black solid;</string>
           </property>
           <widget class="QWidget" name="tab_6">
            <attribute name="title">
-            <string>ChipkitV1</string>
+            <string>Arduino V1</string>
            </attribute>
            <layout class="QGridLayout" name="gridLayout_6">
             <item row="0" column="0">
-             <widget class="QPlainTextEdit" name="codeChipkit">
-              <property name="readOnly">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </widget>
-          <widget class="QWidget" name="tab_7">
-           <attribute name="title">
-            <string>Bussola</string>
-           </attribute>
-           <layout class="QGridLayout" name="gridLayout_7">
-            <item row="0" column="0">
-             <widget class="QPlainTextEdit" name="codeBussola">
-              <property name="readOnly">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </widget>
-          <widget class="QWidget" name="tab_8">
-           <attribute name="title">
-            <string>DCM</string>
-           </attribute>
-           <layout class="QGridLayout" name="gridLayout_8">
-            <item row="0" column="0">
-             <widget class="QPlainTextEdit" name="codeDCM">
-              <property name="readOnly">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </widget>
-          <widget class="QWidget" name="tab_9">
-           <attribute name="title">
-            <string>Fusion</string>
-           </attribute>
-           <layout class="QGridLayout" name="gridLayout_9">
-            <item row="0" column="0">
-             <widget class="QPlainTextEdit" name="codeFusion">
+             <widget class="QPlainTextEdit" name="codeArduino">
               <property name="readOnly">
                <bool>true</bool>
               </property>
@@ -669,62 +627,6 @@ border-width: 1px black solid;</string>
             </item>
            </layout>
           </widget>
-          <widget class="QWidget" name="tab_11">
-           <attribute name="title">
-            <string>Math</string>
-           </attribute>
-           <layout class="QGridLayout" name="gridLayout_11">
-            <item row="0" column="0">
-             <widget class="QPlainTextEdit" name="codeMath">
-              <property name="readOnly">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </widget>
-          <widget class="QWidget" name="tab_12">
-           <attribute name="title">
-            <string>Output</string>
-           </attribute>
-           <layout class="QGridLayout" name="gridLayout_12">
-            <item row="0" column="0">
-             <widget class="QPlainTextEdit" name="codeOutput">
-              <property name="readOnly">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </widget>
-          <widget class="QWidget" name="tab_13">
-           <attribute name="title">
-            <string>Sensors</string>
-           </attribute>
-           <layout class="QGridLayout" name="gridLayout_13">
-            <item row="0" column="0">
-             <widget class="QPlainTextEdit" name="codeSensors">
-              <property name="readOnly">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </widget>
-          <widget class="QWidget" name="tab_14">
-           <attribute name="title">
-            <string>SetupMotors</string>
-           </attribute>
-           <layout class="QGridLayout" name="gridLayout_14">
-            <item row="0" column="0">
-             <widget class="QPlainTextEdit" name="codeSetupMotors">
-              <property name="readOnly">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </widget>
          </widget>
         </item>
        </layout>
@@ -737,7 +639,7 @@ border-width: 1px black solid;</string>
         <item row="0" column="0">
          <widget class="QTabWidget" name="tabWidget_2">
           <property name="currentIndex">
-           <number>0</number>
+           <number>1</number>
           </property>
           <widget class="QWidget" name="tab_17">
            <attribute name="title">
@@ -783,11 +685,38 @@ Para além disto é necessário incluir os .h das respectivas bibliotecas, (que 
            <attribute name="title">
             <string>Linux</string>
            </attribute>
-          </widget>
-          <widget class="QWidget" name="tab_19">
-           <attribute name="title">
-            <string>MacOS</string>
-           </attribute>
+           <layout class="QGridLayout" name="gridLayout_7">
+            <item row="0" column="0">
+             <widget class="QPlainTextEdit" name="plainTextEdit_2">
+              <property name="plainText">
+               <string>Neste Software são usadas duas Bibiolitecas (extra QT 5.3.2).
+
+São elas:
+
+SDL -Simple DirectMedia Layer é uma biblioteca multimídia livre e de código aberto, multiplataforma, escrito em C que representa uma interface simples para gráficos, som, e dispositivos de entrada de várias plataformas. (Usada para o reconhecimento de qualquer GAMEPAD)
+ 
+GLUT-GLUT (OpenGL Utility Toolkit) é uma biblioteca de funcionalidades para OpenGL cujo principal objetivo é a abstração do sistema operacional fazendo com que os aplicativos sejam multiplataforma. (Usada para desenhar em 3D o robô para melhor visualização dos dados adiquiridos do IMU)
+
+Para que funcionem correctamente com o Ubuntu é necessário que estejam declaradas no .pro deste projecto e que estejam disponiveis no seguinte caminho: 
+
+LIBS += -L&quot;/home/code/Documents/LIBS/SDL&quot; \
+        -lSDL2
+
+LIBS += -L&quot;/home/code/Documents/LIBS/GLUT&quot; \
+        -lglut -lGLU -lGL
+
+(Sendo este um caminho absoluto, é necessário ser alterado sempre que o codigo seja compilado num outro PC)
+
+Ambas as bibliotecas podem ser encontradas online, ou na pasta de instalação deste programa em formato tar.gz.
+
+
+
+
+</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </widget>
          </widget>
         </item>
@@ -807,7 +736,9 @@ Para além disto é necessário incluir os .h das respectivas bibliotecas, (que 
    <container>1</container>
   </customwidget>
  </customwidgets>
- <resources/>
+ <resources>
+  <include location="rs.qrc"/>
+ </resources>
  <connections>
   <connection>
    <sender>pushButton_2</sender>

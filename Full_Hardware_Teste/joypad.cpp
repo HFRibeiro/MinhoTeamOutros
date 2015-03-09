@@ -13,6 +13,8 @@ QRectF JoyPad::boundingRect() const
 
 void JoyPad::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
+    Q_UNUSED(option);
+    Q_UNUSED(widget);
     //QRectF rec = boundingRect();
 
     QPainterPath paht;
@@ -57,7 +59,7 @@ void JoyPad::setNotclicked()
 
 void JoyPad::advance(int phase)
 {
-
+    Q_UNUSED(phase);
 }
 
 void JoyPad::mousePressEvent(QGraphicsSceneMouseEvent *event)

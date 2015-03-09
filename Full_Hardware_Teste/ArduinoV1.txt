@@ -1,0 +1,306 @@
+//Minho Team 2015 Arduino Hardware Control
+
+#include <Wire.h>                   //required by Omni3MD.cpp
+#include <Omni3MD.h>
+#include "Timer.h"
+
+//constants definitions
+#define OMNI3MD_ADDRESS 0x30        //default factory address
+#define BROADCAST_ADDRESS 0x00      //i2c broadcast address
+#define M1  1            //Motor1
+#define M2  2            //Motor2
+#define M3  3            //Motor3
+
+#define IRREADINTERVAL 50 //InfraRed Read Time Interval
+
+#define CH 5  
+#define MM1 4 
+#define SOL 6                      
+#define MM2 7 
+#define KICKPIN 8
+
+#define IR_EMISSOR_FRENTE   2
+#define IR_EMISSOR_TRAS     3
+#define IR_RECETOR_FRENTE   A0
+#define IR_RECETOR_TRAS     A1
+
+Omni3MD omni;                       //declaration of object variable to control the Omni3MD
+
+/*** variable declarations ***/
+//Variables to read from Omni3MD
+int enc1=0;            // encoder1 reading, this is the encoder incremental count for the defined prescaler (positional control)
+int enc2=0;            // encoder2 reading, this is the encoder incremental count for the defined prescaler (positional control)
+int enc3=0;            // encoder3 reading, this is the encoder incremental count for the defined prescaler (positional control)
+float battery=0;       // battery reading
+float temperature=0;   // temperature reading
+byte firm_int=0;      // the firmware version of your Omni3MD board (visit http://www.botnroll.com/omni3md/ to check if your version is updated)
+byte firm_dec=0;      // the firmware version of your Omni3MD board (visit http://www.botnroll.com/omni3md/ to check if your version is updated)
+byte firm_dev=0;      // the firmware version of your Omni3MD board (visit http://www.botnroll.com/omni3md/ to check if your version is updated)
+byte ctrl_rate=0;        // the control rate for your motors defined at calibration (in times per second)
+int enc1_max;          // maximum count for encoder 1 at calibration, for the defined control rate
+int enc2_max;          // maximum count for encoder 2 at calibration, for the defined control rate
+int enc3_max;          // maximum count for encoder 3 at calibration, for the defined control rate
+
+int P = 500;
+int I = 300;
+int D = 200;
+
+String lido = "";
+String lido2 = "";
+String lido3 = "";
+
+int So = 0,Dr = 0;
+
+Timer tIR,tKick;                               //instantiate the timer object
+int tEventIR,tEventKick;
+int kickTime = 0;
+int irFrente = 0,irTras = 0;
+int maxKick = 25;
+
+void setup()
+{
+    //Setup Hardware control Pins
+    pinMode(MM1, OUTPUT);   
+    pinMode(MM2, OUTPUT); 
+    digitalWrite(MM1,HIGH);   
+    digitalWrite(MM2, HIGH);       
+    analogWrite(SOL, 0);   //PWM Speed Control
+    analogWrite(CH, 0);   //PWM Speed Control
+    
+    pinMode(KICKPIN, OUTPUT);
+    digitalWrite(KICKPIN, LOW);
+    
+    pinMode(IR_RECETOR_FRENTE, INPUT);
+    pinMode(IR_RECETOR_TRAS, INPUT);   
+    pinMode(IR_EMISSOR_FRENTE, OUTPUT);   // Left IR LED & Receiver
+    pinMode(IR_EMISSOR_TRAS, OUTPUT);   // Left IR LED & Receiver
+  
+    //setup Omni
+    Serial.begin(57600);               // set baud rate to 115200bps for printing values in serial monitor. Press (ctrl+shift+m) after uploading
+    omni.i2c_connect(OMNI3MD_ADDRESS);  // set i2c connection
+    delay(10);                          // pause 10 milliseconds
+    omni.stop_motors();                 // stops all motors
+    delay(10);
+      omni.read_firmware(&firm_int,&firm_dec,&firm_dev); // read firmware version value
+      Serial.print("Firmware:");  
+      Serial.print(firm_int);             // prints firmware value
+      Serial.print(".");  
+      Serial.print(firm_dec);             // prints firmware value
+      Serial.print(".");  
+      Serial.println(firm_dev);             // prints firmware value
+      
+      delay(5);
+      ctrl_rate=omni.read_control_rate();   // read the control rate value
+      Serial.print("Control_Rate:");
+      Serial.println(ctrl_rate);            // prints control rate value
+      delay(5);
+      enc1_max=omni.read_enc1_max();        // read encoder1 maximum value at calibration (usefull for detecting a faulty encoder)
+      Serial.print("Encoder1_max:");
+      Serial.println(enc1_max);              // prints encoder1 maximum calibration value
+      delay(5);
+      enc2_max=omni.read_enc2_max();        // read encoder1 maximum value at calibration (usefull for detecting a faulty encoder)
+      Serial.print("Encoder2_max:");
+      Serial.println(enc2_max);              // prints encoder2 maximum calibration value 
+      delay(5);
+      enc3_max=omni.read_enc3_max();        // read encoder1 maximum value at calibration (usefull for detecting a faulty encoder)
+      Serial.print("Encoder3_max:");
+      Serial.println(enc3_max);              // prints encoder3 maximum calibration value
+      delay(5);
+ 
+    omni.set_i2c_timeout(0); // safety parameter -> I2C communication must occur every [byte timeout] x 100 miliseconds for motor movement                             
+    delay(5);                 // 5ms pause required for Omni3MD eeprom writing
+
+    omni.set_PID(P,I,D); // Adjust paramenters for PID control [word Kp, word Ki, word Kd]
+    //omni.set_PID(500,100,50); // Adjust paramenters for PID control [word Kp, word Ki, word Kd]
+    delay(15);                 // 15ms pause required for Omni3MD eeprom writing
+
+    omni.set_ramp(400,1300,0);   // set acceleration ramp and limiar take off parameter gain[word ramp_time, word slope, word Kl] 
+    delay(15);                 // 10ms pause required for Omni3MD eeprom writing
+    
+    
+    //Setup InfraRedTimer
+    tEventIR = tIR.every(IRREADINTERVAL, readIR); //take reading every IRREADINTERVAL miliseconds
+    
+    delay(1000);
+     
+}
+
+
+void loop()
+{    
+  tIR.update();
+  tKick.update();
+  
+      while(Serial.available()>0)
+      {
+        char read_char = Serial.read();
+        if(read_char!='\n')
+        {
+          lido += read_char;
+        }
+        else
+        {
+          if(lido[0]=='o')
+          {
+            
+            String linear_speed = "";
+            String rotational_speed = "";
+            String directions = "";
+            linear_speed = lido.substring(1, lido.indexOf(','));
+            lido = lido.substring(lido.indexOf(',')+1, lido.length());
+            rotational_speed = lido.substring(0, lido.indexOf(','));
+            directions = lido.substring(lido.indexOf(',')+1, lido.length());
+             
+            int  linear_speedInt = linear_speed.toInt();
+            int  rotational_speedInt = rotational_speed.toInt();
+            int  directionsInt = directions.toInt();
+            
+            if(linear_speedInt<0)
+            {
+              linear_speedInt = 0;
+            }
+            else if(linear_speedInt>100)
+            {
+              linear_speedInt = 100;
+            }
+            
+             if(rotational_speedInt<-100)
+            {
+              rotational_speedInt = -100;
+            }
+            else if(rotational_speedInt>100)
+            {
+              rotational_speedInt = 100;
+            }
+            
+            if(directionsInt<0)
+            {
+              directionsInt = 0;
+            }
+            else if(directionsInt>360)
+            {
+              directionsInt = 360;
+            }
+            
+            omni.mov_omni(linear_speedInt, rotational_speedInt, directionsInt);
+            
+            Serial.print("linear_speedInt: ");
+            Serial.println(linear_speedInt);
+            Serial.print("rotational_speedInt: ");
+            Serial.println(rotational_speedInt);
+            Serial.print("directionsInt: ");
+            Serial.println(directionsInt);
+          }
+          else if(lido[0]=='B')
+          {
+            lido2 = lido.substring(2, lido.indexOf('!'));
+            lido3 = lido.substring(lido.indexOf('!')+1, lido.length());
+            int val = lido2.toInt();
+            int val2 = lido3.toInt();
+            
+            if(val2>100)
+            {
+              val2 = 100;
+            }
+            else if(val2<0)
+            {
+              val2 = 0;
+            }
+            if(val>360)
+            {
+              val = 360;
+            }
+            else if(val<0)
+            {
+              val = 0;
+            }
+            
+            omni.mov_omni(val2,0,val);
+          }
+          else if(lido[0]=='S')
+        {
+          if(So == 0)
+          {
+            digitalWrite(MM1,HIGH);      
+            analogWrite(SOL, 255);   //PWM Speed Control
+            So = 1;
+            Serial.print("Solonoide1");
+          }
+          else
+          {
+            digitalWrite(MM1,HIGH);      
+            analogWrite(SOL, 0);   //PWM Speed Control
+            So = 0;
+            Serial.print("Solonoide0");
+          }
+        }
+        else if(lido[0]=='D')
+        {
+          if(Dr == 0)
+          {
+            digitalWrite(MM2,HIGH);      
+            analogWrite(CH, 255);   //PWM Speed Control
+            Dr = 1;
+            Serial.print("Dribler1");
+          }
+          else
+          {
+            digitalWrite(MM2,HIGH);      
+            analogWrite(CH, 0);   //PWM Speed Control
+            Dr = 0;
+            Serial.print("Dribler0");
+          }
+        }
+        if(lido[0]=='K')
+        {
+          if(lido[1]=='V')
+          {
+            lido2 = lido.substring(2, lido.length());
+            kickTime = lido2.toInt();
+            if(kickTime>maxKick)
+              {
+                kickTime = maxKick;
+              }
+              if(kickTime < 0)
+              {
+                kickTime = 0;
+              }
+              digitalWrite(KICKPIN, HIGH);
+              tEventKick = tKick.every(kickTime, kick_ball); //take time every kickTime miliseconds
+              Serial.print(kickTime);
+          }
+          else if(lido[1]=='H')
+          {
+            lido2 = lido.substring(2, lido.length());
+            kickTime = lido2.toInt();
+            
+            digitalWrite(MM1,HIGH);      
+            analogWrite(SOL, 255);   //PWM Speed Control
+            So = 1;
+            Serial.print("Solonoide1:");
+            
+            if(kickTime>maxKick)
+              {
+                kickTime = maxKick;
+              }
+              if(kickTime < 0)
+              {
+                kickTime = 0;
+              }
+              digitalWrite(KICKPIN, HIGH);
+              tEventKick = tKick.every(kickTime, kick_ball); //take time every kickTime miliseconds
+              Serial.print(kickTime);
+            }
+          }
+          lido = "";
+        }
+        
+      }
+      
+}
+
+void kick_ball()
+{
+  digitalWrite(KICKPIN, LOW);
+  tKick.stop(tEventKick);
+}

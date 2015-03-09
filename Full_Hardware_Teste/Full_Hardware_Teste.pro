@@ -34,11 +34,22 @@ HEADERS  += mainwindow.h \
 
 FORMS    += mainwindow.ui
 
-LIBS += -L"C:\Users\Helder\Documents\QtProjetcts\GLUT" \
-        -lglut32
+#-------------------Windows------------------------------
+#
+#LIBS += -L"C:\Users\Helder\Documents\QtProjetcts\GLUT" \
+#        -lglut32
+#
+#LIBS += -L"C:\Users\Helder\Documents\QtProjetcts\SDL\x86" \
+#        -lSDL2
+#-------------------------------------------------------
 
-LIBS += -L"C:\Users\Helder\Documents\QtProjetcts\SDL\x86" \
+#-------------------Ubuntu-----------------------------
+LIBS += -L"/home/code/Documents/LIBS/SDL" \
         -lSDL2
 
+LIBS += -L"/home/code/Documents/LIBS/GLUT" \
+        -lglut -lGLU -lGL
+
+#-------------------------------------------------------
 RESOURCES += \
     rs.qrc

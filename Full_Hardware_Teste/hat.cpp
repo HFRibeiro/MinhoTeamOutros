@@ -13,6 +13,8 @@ QRectF Hat::boundingRect() const
 
 void Hat::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
+    Q_UNUSED(option);
+    Q_UNUSED(widget);
     static const QPointF points[7] = {
                 QPointF(-5, -15),
                 QPointF(-5, 5),
@@ -56,5 +58,5 @@ void Hat::setVisible()
 
 void Hat::advance(int phase)
 {
-
+    Q_UNUSED(phase);
 }

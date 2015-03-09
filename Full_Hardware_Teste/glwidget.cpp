@@ -1,12 +1,11 @@
-#include "glwidget.h"
+//TO Windows
+/*#include "glwidget.h"
 #include "GL/glut.h"
 #include <GL/gl.h>			// Header File For The OpenGL32 Library
 #include <GL/glu.h>			// Header File For The GLu32 Library
 
 #include "model.h"
-/******************************************************************************************************************/
 GLuint MyDisplayList; // added by @jeffprod_com (twitter)
-/******************************************************************************************************************/
 
 GLWidget::GLWidget(QWidget *parent) :
     QGLWidget(parent)
@@ -126,6 +125,122 @@ void GLWidget::wheelEvent(QWheelEvent *event)
     glRotatef(-roll +rollOffset, 0, 0, 1);
 
     event->accept();
+}*/
+
+//TO UBUNTU
+#include "glwidget.h"
+#include "GL/glut.h"
+
+GLWidget::GLWidget(QWidget *parent) :
+    QGLWidget(parent)
+{
+    active = false;
+    yaw = 0;
+    pitch = 0;
+    roll = 0;
+    yawOffset = 0;
+    pitchOffset = 0;
+    rollOffset = 0;
+    connect(&timer,SIGNAL(timeout()),this,SLOT(updateGL()));
+    timer.start(16);
+    zNear = 0.01;
+    zFar = 99.99;
+    AngleP = 70;
 }
+
+void GLWidget::initializeGL()
+{
+    glClearColor(0.2,0.2,0.2,1);
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_LIGHT0);
+    glEnable(GL_LIGHTING);
+    glEnable(GL_COLOR_MATERIAL);
+}
+
+void GLWidget::paintGL()
+{
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    if(active)
+    {
+        glViewport(0, 0, (GLint)With, (GLint)Heig);
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        gluPerspective(AngleP,(float)With/Heig,zNear,zFar);
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+        gluLookAt(0,0,5,0,0,0,0,1,0);
+
+
+        glRotatef(-pitch +pitchOffset, 1, 0, 0);
+        glRotatef(-yaw+90 +yawOffset, 0, 1, 0); //+90 -> Para ficar de frente
+        glRotatef(-roll +rollOffset, 0, 0, 1);
+        active = false;
+    }
+
+    glColor3f(1,1,1);
+
+    glutSolidTeapot(0.5);
+
+}
+
+void GLWidget::resizeGL(int w, int h)
+{
+    With = w;
+    Heig = h;
+    glViewport(0, 0, (GLint)w, (GLint)h);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluPerspective(AngleP,(float)With/Heig,zNear,zFar);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    gluLookAt(0,0,5,0,0,0,0,1,0);
+    glRotatef(-pitch +pitchOffset, 1, 0, 0);
+    glRotatef(-yaw+90 +yawOffset, 0, 1, 0); //+90 -> Para ficar de frente
+    glRotatef(-roll +rollOffset, 0, 0, 1);
+}
+
+void GLWidget::wheelEvent(QWheelEvent *event)
+{
+    int numDegrees = event->delta() / 8;
+    int numSteps = numDegrees / 15;
+
+    AngleP = AngleP-numSteps*1;
+    glViewport(0, 0, (GLint)With, (GLint)Heig);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluPerspective(AngleP,(float)With/Heig,zNear,zFar);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    gluLookAt(0,0,5,0,0,0,0,1,0);
+
+    glRotatef(-pitch +pitchOffset, 1, 0, 0);
+    glRotatef(-yaw+90 +yawOffset, 0, 1, 0); //+90 -> Para ficar de frente
+    glRotatef(-roll +rollOffset, 0, 0, 1);
+
+    event->accept();
+}
+
+void GLWidget::setYPR(float Y, float P, float R)
+{
+    active = true;
+    yaw = Y;
+    pitch = P;
+    roll = R;
+}
+
+void GLWidget::setY(float Y)
+{
+    active = true;
+    yaw = Y;
+}
+
+void GLWidget::setYPROffset(float Y, float P, float R)
+{
+    yawOffset = Y;
+    pitchOffset = P;
+    rollOffset = R;
+}
+
 
 

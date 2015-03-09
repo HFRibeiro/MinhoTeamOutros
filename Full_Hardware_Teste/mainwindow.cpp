@@ -8,7 +8,10 @@
 #include "joypad.h"
 
 #include <QMessageBox>
-#include "SDL/SDL.h"
+//Windows
+//#include "SDL/SDL.h"
+//Ubuntu
+#include "SDL2/SDL.h"
 #include <QThread>
 #include <math.h>
 
@@ -270,10 +273,10 @@ void MainWindow::updateGamepad()
 {
     SDL_JoystickUpdate();
     check_buttons();
-    int joy0 = SDL_JoystickGetAxis(joystick,0);
-    int joy1 = SDL_JoystickGetAxis(joystick,1);
-    int joy2 = SDL_JoystickGetAxis(joystick,2);
-    int joy3 = SDL_JoystickGetAxis(joystick,3);
+    int joy0 = SDL_JoystickGetAxis(joystick,2);
+    int joy1 = SDL_JoystickGetAxis(joystick,3);
+    int joy2 = SDL_JoystickGetAxis(joystick,0);
+    int joy3 = SDL_JoystickGetAxis(joystick,1);
     ui->LjoyX->setValue(joy0);
     ui->LjoyY->setValue(joy1);
     ui->RjoyX->setValue(joy2);
@@ -664,6 +667,7 @@ void MainWindow::resizeEvent(QResizeEvent *event)
 
 void MainWindow::on_verticalSliderKick_actionTriggered(int action)
 {
+    Q_UNUSED(action);
     ui->lb_kick->setText(QString::number(ui->verticalSliderKick->value())+"%");
 }
 
@@ -706,7 +710,7 @@ void MainWindow::timeJoys()
 void MainWindow::read_Files()
 {
 
-        QFile file(":/ChipkitV1.txt");
+        QFile file(":/ArduinoV1.txt");
         if(!file.open(QIODevice::ReadOnly)) {
             QMessageBox::information(0, "error", file.errorString());
         }
@@ -716,51 +720,10 @@ void MainWindow::read_Files()
         while(!in.atEnd()) {
             QString line = in.readLine();
             //QMessageBox::information(0, "",line);
-            ui->codeChipkit->appendPlainText(line);
+            ui->codeArduino->appendPlainText(line);
         }
         file.close();
-        //////////////////////////////////////////////////////////////////
-        file.setFileName(":/Bussola.txt");
-        if(!file.open(QIODevice::ReadOnly)) {
-            QMessageBox::information(0, "error", file.errorString());
-        }
 
-        in.setDevice(&file);
-
-        while(!in.atEnd()) {
-            QString line = in.readLine();
-            //QMessageBox::information(0, "",line);
-            ui->codeBussola->appendPlainText(line);
-        }
-        file.close();
-        //////////////////////////////////////////////////////////////////
-        file.setFileName(":/DCM.txt");
-        if(!file.open(QIODevice::ReadOnly)) {
-            QMessageBox::information(0, "error", file.errorString());
-        }
-
-        in.setDevice(&file);
-
-        while(!in.atEnd()) {
-            QString line = in.readLine();
-            //QMessageBox::information(0, "",line);
-            ui->codeDCM->appendPlainText(line);
-        }
-        file.close();
-        //////////////////////////////////////////////////////////////////
-        file.setFileName(":/Fusion.txt");
-        if(!file.open(QIODevice::ReadOnly)) {
-            QMessageBox::information(0, "error", file.errorString());
-        }
-
-        in.setDevice(&file);
-
-        while(!in.atEnd()) {
-            QString line = in.readLine();
-            //QMessageBox::information(0, "",line);
-            ui->codeFusion->appendPlainText(line);
-        }
-        file.close();
         //////////////////////////////////////////////////////////////////
         file.setFileName(":/Ir.txt");
         if(!file.open(QIODevice::ReadOnly)) {
@@ -773,62 +736,6 @@ void MainWindow::read_Files()
             QString line = in.readLine();
             //QMessageBox::information(0, "",line);
             ui->codeIr->appendPlainText(line);
-        }
-        file.close();
-        //////////////////////////////////////////////////////////////////
-        file.setFileName(":/Math.txt");
-        if(!file.open(QIODevice::ReadOnly)) {
-            QMessageBox::information(0, "error", file.errorString());
-        }
-
-        in.setDevice(&file);
-
-        while(!in.atEnd()) {
-            QString line = in.readLine();
-            //QMessageBox::information(0, "",line);
-            ui->codeMath->appendPlainText(line);
-        }
-        file.close();
-        //////////////////////////////////////////////////////////////////
-        file.setFileName(":/Output.txt");
-        if(!file.open(QIODevice::ReadOnly)) {
-            QMessageBox::information(0, "error", file.errorString());
-        }
-
-        in.setDevice(&file);
-
-        while(!in.atEnd()) {
-            QString line = in.readLine();
-            //QMessageBox::information(0, "",line);
-            ui->codeOutput->appendPlainText(line);
-        }
-        file.close();
-        //////////////////////////////////////////////////////////////////
-        file.setFileName(":/Sensors.txt");
-        if(!file.open(QIODevice::ReadOnly)) {
-            QMessageBox::information(0, "error", file.errorString());
-        }
-
-        in.setDevice(&file);
-
-        while(!in.atEnd()) {
-            QString line = in.readLine();
-            //QMessageBox::information(0, "",line);
-            ui->codeSensors->appendPlainText(line);
-        }
-        file.close();
-        //////////////////////////////////////////////////////////////////
-        file.setFileName(":/SetupMotors.txt");
-        if(!file.open(QIODevice::ReadOnly)) {
-            QMessageBox::information(0, "error", file.errorString());
-        }
-
-        in.setDevice(&file);
-
-        while(!in.atEnd()) {
-            QString line = in.readLine();
-            //QMessageBox::information(0, "",line);
-            ui->codeSetupMotors->appendPlainText(line);
         }
         file.close();
 
@@ -856,7 +763,7 @@ void MainWindow::on_bt_copiar_clicked()
     }
 
 
-    QFile file(":/ChipkitV1.txt");
+    QFile file(":/ArduinoV1.txt");
     if(!file.open(QIODevice::ReadOnly)) {
         QMessageBox::information(0, "error", file.errorString());
     }
@@ -871,54 +778,7 @@ void MainWindow::on_bt_copiar_clicked()
 
     file.close();
     data.close();
-    //////////////////////////////////////////////////////////
-    file.setFileName(":/Bussola.txt");
-    if(!file.open(QIODevice::ReadOnly)) {
-        QMessageBox::information(0, "error", file.errorString());
-    }
-    in.setDevice(&file);
 
-    data.setFileName(Path+"Bussola"+".pde");
-    if (data.open(QFile::WriteOnly | QFile::Truncate)) {
-        QTextStream out(&data);
-        QString all = in.readAll();
-        out << all;
-    }
-
-    file.close();
-    data.close();
-    //////////////////////////////////////////////////////////
-    file.setFileName(":/DCM.txt");
-    if(!file.open(QIODevice::ReadOnly)) {
-        QMessageBox::information(0, "error", file.errorString());
-    }
-    in.setDevice(&file);
-
-    data.setFileName(Path+"DCM"+".pde");
-    if (data.open(QFile::WriteOnly | QFile::Truncate)) {
-        QTextStream out(&data);
-        QString all = in.readAll();
-        out << all;
-    }
-
-    file.close();
-    data.close();
-    //////////////////////////////////////////////////////////
-    file.setFileName(":/Fusion.txt");
-    if(!file.open(QIODevice::ReadOnly)) {
-        QMessageBox::information(0, "error", file.errorString());
-    }
-    in.setDevice(&file);
-
-    data.setFileName(Path+"Fusion"+".pde");
-    if (data.open(QFile::WriteOnly | QFile::Truncate)) {
-        QTextStream out(&data);
-        QString all = in.readAll();
-        out << all;
-    }
-
-    file.close();
-    data.close();
     //////////////////////////////////////////////////////////
     file.setFileName(":/Ir.txt");
     if(!file.open(QIODevice::ReadOnly)) {
@@ -935,71 +795,6 @@ void MainWindow::on_bt_copiar_clicked()
 
     file.close();
     data.close();
-    //////////////////////////////////////////////////////////
-    file.setFileName(":/Math.txt");
-    if(!file.open(QIODevice::ReadOnly)) {
-        QMessageBox::information(0, "error", file.errorString());
-    }
-    in.setDevice(&file);
-
-    data.setFileName(Path+"Math"+".pde");
-    if (data.open(QFile::WriteOnly | QFile::Truncate)) {
-        QTextStream out(&data);
-        QString all = in.readAll();
-        out << all;
-    }
-
-    file.close();
-    data.close();
-    //////////////////////////////////////////////////////////
-    file.setFileName(":/Output.txt");
-    if(!file.open(QIODevice::ReadOnly)) {
-        QMessageBox::information(0, "error", file.errorString());
-    }
-    in.setDevice(&file);
-
-    data.setFileName(Path+"Output"+".pde");
-    if (data.open(QFile::WriteOnly | QFile::Truncate)) {
-        QTextStream out(&data);
-        QString all = in.readAll();
-        out << all;
-    }
-
-    file.close();
-    data.close();
-    //////////////////////////////////////////////////////////
-    file.setFileName(":/Sensors.txt");
-    if(!file.open(QIODevice::ReadOnly)) {
-        QMessageBox::information(0, "error", file.errorString());
-    }
-    in.setDevice(&file);
-
-    data.setFileName(Path+"Sensors"+".pde");
-    if (data.open(QFile::WriteOnly | QFile::Truncate)) {
-        QTextStream out(&data);
-        QString all = in.readAll();
-        out << all;
-    }
-
-    file.close();
-    data.close();
-    //////////////////////////////////////////////////////////
-    file.setFileName(":/SetupMotors.txt");
-    if(!file.open(QIODevice::ReadOnly)) {
-        QMessageBox::information(0, "error", file.errorString());
-    }
-    in.setDevice(&file);
-
-    data.setFileName(Path+"SetupMotors"+".pde");
-    if (data.open(QFile::WriteOnly | QFile::Truncate)) {
-        QTextStream out(&data);
-        QString all = in.readAll();
-        out << all;
-    }
-
-    file.close();
-    data.close();
-
 
     QMessageBox::information(0, "Saved: ",Path);
 }

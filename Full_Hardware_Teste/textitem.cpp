@@ -13,6 +13,8 @@ QRectF TextItem::boundingRect() const
 
 void TextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
+    Q_UNUSED(option);
+    Q_UNUSED(widget);
     QFont font( "Newyork" );
     font.setPointSize(14);
     QPen myPen(QColor (255,128,0));
